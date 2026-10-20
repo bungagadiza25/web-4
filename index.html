@@ -1,0 +1,289 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartStudy - Prediksi Kebutuhan Belajar</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f5fb;
+            color: #26364b;
+        }
+
+        header {
+            background: #2457a6;
+            color: white;
+            padding: 28px 18px;
+            text-align: center;
+        }
+
+        main {
+            max-width: 750px;
+            margin: 25px auto;
+            padding: 16px;
+        }
+
+        .card {
+            background: white;
+            padding: 22px;
+            margin-bottom: 18px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px #0000000d;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-top: 7px;
+            border: 1px solid #ccd5e2;
+            border-radius: 7px;
+        }
+
+        button {
+            width: 100%;
+            padding: 13px;
+            margin-top: 20px;
+            background: #2457a6;
+            color: white;
+            border: none;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        button:hover {
+            background: #193f7c;
+        }
+
+        #hasil {
+            padding: 15px;
+            margin-top: 18px;
+            border-radius: 8px;
+            background: #edf3ff;
+            line-height: 1.6;
+        }
+
+        .data {
+            padding: 12px;
+            border-bottom: 1px solid #e1e6ee;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #65748a;
+        }
+    </style>
+</head>
+
+<body>
+<header>
+    <h1>SmartStudy</h1>
+    <p>Sistem Klasifikasi Kebutuhan Pendampingan Belajar</p>
+    <small>Machine Learning dengan Algoritma KNN</small>
+</header>
+
+<main>
+    <section class="card">
+        <h2>Input Data Mahasiswa</h2>
+        <p>Masukkan data untuk melakukan klasifikasi.</p>
+
+        <label for="jam">Jam Belajar per Hari</label>
+        <input type="number" id="jam"
+               min="0" max="10" step="0.5"
+               placeholder="Contoh: 2">
+
+        <label for="hadir">Persentase Kehadiran (%)</label>
+        <input type="number" id="hadir"
+               min="0" max="100"
+               placeholder="Contoh: 75">
+
+        <label for="tugas">Nilai Tugas (0-100)</label>
+        <input type="number" id="tugas"
+               min="0" max="100"
+               placeholder="Contoh: 65">
+
+        <button onclick="prediksi()">
+            Jalankan Prediksi KNN
+        </button>
+
+        <div id="hasil" aria-live="polite">
+            Hasil klasifikasi akan muncul di sini.
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Bagaimana Machine Learning Bekerja?</h2>
+        <p>
+            Sistem menggunakan data latih yang berisi
+            jam belajar, kehadiran, nilai tugas, dan kategori.
+            Algoritma KNN menghitung jarak data baru terhadap
+            data latih, lalu memilih tiga tetangga terdekat.
+        </p>
+        <p>
+            Kategori yang paling banyak muncul di antara
+            tiga tetangga tersebut menjadi hasil prediksi.
+        </p>
+        <p>
+            Data yang digunakan hanya data simulasi untuk
+            pembelajaran, bukan data mahasiswa sebenarnya.
+        </p>
+    </section>
+
+    <section class="card">
+        <h2>Contoh Data Latih</h2>
+        <div id="dataLatih"></div>
+    </section>
+</main>
+
+<footer>
+    Studi Kasus Informatika | SmartStudy
+</footer>
+
+<script>
+    // Data simulasi untuk proses klasifikasi KNN
+    const dataLatih = [
+        {jam: 1, hadir: 60, tugas: 45,
+         kelas: "Perlu pendampingan"},
+
+        {jam: 2, hadir: 70, tugas: 55,
+         kelas: "Perlu pendampingan"},
+
+        {jam: 1.5, hadir: 65, tugas: 50,
+         kelas: "Perlu pendampingan"},
+
+        {jam: 3, hadir: 75, tugas: 65,
+         kelas: "Perlu pendampingan"},
+
+        {jam: 4, hadir: 85, tugas: 78,
+         kelas: "Cukup mandiri"},
+
+        {jam: 5, hadir: 90, tugas: 85,
+         kelas: "Cukup mandiri"},
+
+        {jam: 6, hadir: 95, tugas: 92,
+         kelas: "Cukup mandiri"},
+
+        {jam: 4.5, hadir: 88, tugas: 82,
+         kelas: "Cukup mandiri"}
+    ];
+
+    // Menampilkan data latih pada halaman
+    function tampilkanData() {
+        const wadah = document.getElementById("dataLatih");
+
+        dataLatih.forEach((data, indeks) => {
+            const item = document.createElement("div");
+            item.className = "data";
+            item.textContent =
+                "Data " + (indeks + 1) +
+                ": Belajar " + data.jam + " jam, kehadiran " +
+                data.hadir + "%, nilai tugas " + data.tugas +
+                " - " + data.kelas;
+
+            wadah.appendChild(item);
+        });
+    }
+
+    // Menghitung jarak Euclidean yang dinormalisasi
+    function hitungJarak(a, b) {
+        const dJam = (a.jam - b.jam) / 10;
+        const dHadir = (a.hadir - b.hadir) / 100;
+        const dTugas = (a.tugas - b.tugas) / 100;
+
+        return Math.sqrt(
+            dJam * dJam +
+            dHadir * dHadir +
+            dTugas * dTugas
+        );
+    }
+
+    function prediksi() {
+        const jam = document.getElementById("jam").value;
+        const hadir = document.getElementById("hadir").value;
+        const tugas = document.getElementById("tugas").value;
+        const hasil = document.getElementById("hasil");
+
+        if (jam === "" || hadir === "" || tugas === "") {
+            hasil.textContent =
+                "Silakan isi semua data terlebih dahulu.";
+            return;
+        }
+
+        const baru = {
+            jam: Number(jam),
+            hadir: Number(hadir),
+            tugas: Number(tugas)
+        };
+
+        if (
+            !Number.isFinite(baru.jam) ||
+            !Number.isFinite(baru.hadir) ||
+            !Number.isFinite(baru.tugas) ||
+            baru.jam < 0 || baru.jam > 10 ||
+            baru.hadir < 0 || baru.hadir > 100 ||
+            baru.tugas < 0 || baru.tugas > 100
+        ) {
+            hasil.textContent =
+                "Data tidak valid. Periksa kembali nilai input.";
+            return;
+        }
+
+        // Menghitung jarak ke seluruh data latih
+        const tetangga = dataLatih.map(data => ({
+            ...data,
+            jarak: hitungJarak(baru, data)
+        }));
+
+        // Mengurutkan dari jarak terkecil
+        tetangga.sort((a, b) => a.jarak - b.jarak);
+
+        // Mengambil tiga tetangga terdekat
+        const kTerpilih = tetangga.slice(0, 3);
+
+        const jumlah = {
+            "Perlu pendampingan": 0,
+            "Cukup mandiri": 0
+        };
+
+        kTerpilih.forEach(data => {
+            jumlah[data.kelas]++;
+        });
+
+        const prediksiAkhir =
+            jumlah["Perlu pendampingan"] >
+            jumlah["Cukup mandiri"]
+            ? "Perlu pendampingan"
+            : "Cukup mandiri";
+
+        const rincian = kTerpilih.map((data, i) =>
+            (i + 1) + ". " + data.kelas +
+            " (jarak: " + data.jarak.toFixed(3) + ")"
+        ).join("<br>");
+
+        hasil.innerHTML =
+            "<strong>Hasil klasifikasi: " +
+            prediksiAkhir + "</strong><br><br>" +
+            "Tiga tetangga terdekat:<br>" + rincian +
+            "<br><br><small>Hasil ini berdasarkan data " +
+            "simulasi dan bukan penilaian akademik resmi.</small>";
+    }
+
+    tampilkanData();
+</script>
+</body>
+</html>
